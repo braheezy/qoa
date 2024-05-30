@@ -1,4 +1,6 @@
 # QOA
+[![Go Reference](https://pkg.go.dev/badge/github.com/braheezy/qoa.svg)](https://pkg.go.dev/github.com/braheezy/qoa)
+
 > The [Quite OK Audio Format](https://qoaformat.org/) for Fast, Lossy Compression.
 
 The `qoa` package is a pure Go implementation.
