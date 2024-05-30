@@ -36,3 +36,5 @@ qoaEncodedData, err := qoa.Encode(decodedData)
 
 ## Commit History
 Most of this package was developed in [`goqoa`](https://github.com/braheezy/qoa) and the commit history can be found there.
+
+I moved it out of that project because I didn't want the version of the library to be dependent on the version of the higher level `goqoa` tool and I didn't know (at the time) that Go has an opinionated way of handling module versions.
