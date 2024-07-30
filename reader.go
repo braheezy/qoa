@@ -7,23 +7,30 @@ import (
 
 // Reader is a custom io.Reader that reads from QOA audio data.
 type Reader struct {
-	data []int16
-	pos  int
+	data     []int16
+	pos      int
+	channels int
 }
 
 var ErrInvalidArgument = errors.New("invalid argument")
 
 // NewReader creates a new Reader instance.
-func NewReader(data []int16) *Reader {
+func NewReader(data []int16, channels int) *Reader {
 	return &Reader{
-		data: data,
-		pos:  0,
+		data:     data,
+		pos:      0,
+		channels: channels,
 	}
 }
 
 // Read implements the io.Reader interface
 func (r *Reader) Read(p []byte) (n int, err error) {
-	samplesToRead := len(p) / 2
+	var samplesToRead int
+	if r.channels == 1 {
+		samplesToRead = len(p) / 4
+	} else {
+		samplesToRead = len(p) / 2
+	}
 
 	if r.pos >= len(r.data) {
 		// Return EOF when there is no more data to read
@@ -36,11 +43,23 @@ func (r *Reader) Read(p []byte) (n int, err error) {
 
 	for i := 0; i < samplesToRead; i++ {
 		sample := r.data[r.pos]
-		p[i*2] = byte(sample & 0xFF)
-		p[i*2+1] = byte(sample >> 8)
+		if r.channels == 1 {
+			// Duplicate mono samples to stereo
+			p[i*4] = byte(sample & 0xFF)
+			p[i*4+1] = byte(sample >> 8)
+			p[i*4+2] = byte(sample & 0xFF)
+			p[i*4+3] = byte(sample >> 8)
+		} else {
+			// Assume stereo and copy directly
+			p[i*2] = byte(sample & 0xFF)
+			p[i*2+1] = byte(sample >> 8)
+		}
 		r.pos++
 	}
 
+	if r.channels == 1 {
+		return samplesToRead * 4, nil
+	}
 	return samplesToRead * 2, nil
 }
 
@@ -64,7 +83,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 		return 0, ErrInvalidArgument
 	}
 	if newPos >= int64(len(r.data)) {
-		// prevent seeking beyond the end, handle as per your need
+		// prevent seeking beyond the end
 		return 0, io.EOF
 	}
 	// set the new position
@@ -75,4 +94,9 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 // Position returns the number of bytes that have been read
 func (r *Reader) Position() int {
 	return r.pos
+}
+
+// SamplesRead returns the number of samples that have been read
+func (r *Reader) SamplesRead() int {
+	return r.pos / r.channels
 }
