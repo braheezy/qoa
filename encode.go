@@ -3,7 +3,6 @@ package qoa
 import (
 	"encoding/binary"
 	"errors"
-	"fmt"
 )
 
 // encodeHeader encodes the QOA header.
@@ -197,9 +196,6 @@ func (q *QOA) Encode(sampleData []int16) ([]byte, error) {
 	frameLen := uint32(QOAFrameLen)
 	for sampleIndex := uint32(0); sampleIndex < q.Samples; sampleIndex += frameLen {
 		frameLen = uint32(clamp(QOAFrameLen, 0, int(q.Samples-sampleIndex)))
-		if (sampleIndex+frameLen)*q.Channels > uint32(len(sampleData)) {
-			return nil, fmt.Errorf("not enough samples: %v", len(sampleData))
-		}
 		frameSamples := sampleData[sampleIndex*q.Channels : (sampleIndex+frameLen)*q.Channels]
 		frameSize := q.encodeFrame(frameSamples, frameLen, bytes[p:])
 		p += uint32(frameSize)
