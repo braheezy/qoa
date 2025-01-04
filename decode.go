@@ -89,12 +89,13 @@ func (q *QOA) decodeFrame(bytes []byte, size uint, sampleData []int16, frameLen 
 			p += 8
 
 			scaleFactor := (slice >> 60) & 0xF
+			slice <<= 4
 			sliceStart := sampleIndex*channels + c
 			sliceEnd := uint32(clamp(int(sampleIndex)+QOASliceLen, 0, int(samples)))*channels + c
 
 			for si := sliceStart; si < sliceEnd; si += channels {
 				predicted := q.lms[c].predict()
-				quantized := int((slice >> 57) & 0x7)
+				quantized := int((slice >> 61) & 0x7)
 				dequantized := qoaDequantTable[scaleFactor][quantized]
 				reconstructed := clampS16(predicted + int(dequantized))
 
