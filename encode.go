@@ -106,6 +106,7 @@ func (q *QOA) findBestScaleFactor(sampleIndex uint32, currentChannel uint32, sli
 		/* There is a strong correlation between the scaleFactors of
 		neighboring slices. As an optimization, start testing
 		the best scaleFactor of the previous slice first. */
+		// The reference does `& (16 - 1)` instead of `% 16` but benchmarking shows this is faster in Go.
 		scaleFactor := (sfi + q.prevScaleFactor[currentChannel]) % 16
 
 		/* Reset the LMS state to the last known good one

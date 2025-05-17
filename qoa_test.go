@@ -257,6 +257,7 @@ func TestBasicEncode(t *testing.T) {
 	assert.Nil(t, err, "Unexpected error")
 	assert.NotEmpty(t, qoaEncodedData, "Expected QOA encoded data")
 }
+
 func FuzzEncodeDecode(f *testing.F) {
 	// Values to fuzz with, taken from the QOA spec
 	MIN_CHANNELS := 1
@@ -325,4 +326,51 @@ func generateFuzzData(size int, seedValue int16) []byte {
 		binary.BigEndian.PutUint16(data[i:i+2], uint16(seedValue))
 	}
 	return data
+}
+
+func BenchmarkDecodeQOA(b *testing.B) {
+	qoaBytes, err := os.ReadFile("testdata/sting_loss_piano.qoa")
+	if err != nil {
+		b.Fatalf("Error reading QOA file: %v", err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _, err := Decode(qoaBytes)
+		if err != nil {
+			b.Fatalf("Decode failed: %v", err)
+		}
+	}
+}
+
+func BenchmarkEncodeQOA(b *testing.B) {
+	wavFile, err := os.Open("testdata/sting_loss_piano.wav")
+	if err != nil {
+		b.Fatalf("Error reading WAV file: %v", err)
+	}
+	defer wavFile.Close()
+
+	wavDecoder := wav.NewDecoder(wavFile)
+	wavBuffer, err := wavDecoder.FullPCMBuffer()
+	if err != nil {
+		b.Fatalf("Error decoding WAV file: %v", err)
+	}
+
+	samples := uint32(len(wavBuffer.Data) / wavBuffer.Format.NumChannels)
+	q := NewEncoder(
+		uint32(wavBuffer.Format.SampleRate),
+		uint32(wavBuffer.Format.NumChannels),
+		samples)
+
+	int16AudioData := make([]int16, len(wavBuffer.Data))
+	for i, val := range wavBuffer.Data {
+		int16AudioData[i] = int16(val)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := q.Encode(int16AudioData)
+		if err != nil {
+			b.Fatalf("Encode failed: %v", err)
+		}
+	}
 }
